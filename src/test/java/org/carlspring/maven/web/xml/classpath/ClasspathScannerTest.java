@@ -63,8 +63,8 @@ public class ClasspathScannerTest
 
         File resourcesBaseDir = new File(DIR_TEST_RESOURCES).getCanonicalFile();
 
-        CLASSPATH += ":" + new File(resourcesBaseDir, "dir1");
-        CLASSPATH += ":" + new File(resourcesBaseDir, "dir2");
+        CLASSPATH += ":" + new File(resourcesBaseDir, "dirs/dir1");
+        CLASSPATH += ":" + new File(resourcesBaseDir, "dirs/dir2");
         CLASSPATH += ":" + new File(resourcesBaseDir, "wars/webapp1.war");
         CLASSPATH += ":" + new File(resourcesBaseDir, "wars/webapp2.war");
 

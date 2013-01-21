@@ -114,9 +114,12 @@ public class ClasspathScanner
     {
         for (FilenameFilter filter : filters)
         {
-            if (filter.accept(resourceFile.getParentFile().getCanonicalFile(), resourceFile.getName()))
+            if (resourceFile.isFile())
             {
-                return true;
+                if (filter.accept(resourceFile.getParentFile().getCanonicalFile(), resourceFile.getName()))
+                {
+                    return true;
+                }
             }
         }
 
