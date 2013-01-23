@@ -21,14 +21,13 @@ package org.carlspring.maven.web.xml.classpath;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.model.Dependency;
-import org.carlspring.maven.util.ArtifactUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  * @author mtodorov
@@ -36,25 +35,6 @@ import java.util.*;
 public class DependenciesScanner
 {
 
-
-//    public Map<String, InputStream> findResourcesInDependencies(List<Dependency> dependencies,
-//                                                                File localRepository
-//                                                                /*, ArtifactRepository localRepository*/)
-//            throws IOException
-//    {
-//        Map<String, InputStream> results = new TreeMap<String, InputStream>();
-//
-//        Set<Artifact> wars = getWARArtifacts(dependencies);
-//
-//        for (Dependency war : wars)
-//        {
-//            //! File dependencyFile = ArtifactUtils.getFileForDependency(war, new File(localRepository.getBasedir()));
-//            File dependencyFile = ArtifactUtils.getFileForDependency(war, localRepository);
-//            results.put(dependencyFile.getAbsolutePath(), new FileInputStream(dependencyFile));
-//        }
-//
-//        return results;
-//    }
 
     public Map<String, InputStream> findResourcesInArtifacts(Set<Artifact> artifacts,
                                                              ArtifactRepository localRepository)
@@ -68,7 +48,22 @@ public class DependenciesScanner
         {
             //! File dependencyFile = ArtifactUtils.getFileForDependency(war, new File(localRepository.getBasedir()));
             File dependencyFile = new File(localRepository.getBasedir(), localRepository.pathOf(war));
-            results.put(dependencyFile.getAbsolutePath(), new FileInputStream(dependencyFile));
+
+            JarFile jarFile = new JarFile(dependencyFile);
+            Enumeration<JarEntry> entries = jarFile.entries();
+            while (entries.hasMoreElements())
+            {
+                JarEntry singleEntry = entries.nextElement();
+
+                if (singleEntry.getName().matches(".*web\\.xml"))
+                {
+                    System.out.println("Match found in archive " + dependencyFile.getCanonicalPath() + ": " +
+                                       singleEntry.getName());
+
+                    results.put(jarFile.getName() + "/" + singleEntry.getName(), jarFile.getInputStream(singleEntry));
+                }
+            }
+
         }
 
         return results;
@@ -87,21 +82,5 @@ public class DependenciesScanner
 
         return wars;
     }
-
-    /*
-    private List<Artifact> getWARDependencies(List<Artifact> artifacts)
-    {
-        List<Artifact> wars = new ArrayList<Artifact>();
-        for (Artifact artifact : artifacts)
-        {
-            if (artifact.getType().equals("war"))
-            {
-                wars.add(artifact);
-            }
-        }
-
-        return wars;
-    }
-    */
 
 }

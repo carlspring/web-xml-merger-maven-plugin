@@ -1,23 +1,4 @@
-package org.carlspring.maven.web.xml.classpath;
-
-/**
- * Copyright 2013 Martin Todorov,
- * Carlspring Consulting & Development Ltd.
- *
- *      http://www.carlspring.com/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package org.carlspring.maven.web.xml;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
@@ -26,60 +7,62 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.DefaultArtifactRepository;
 import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
 import org.apache.maven.artifact.versioning.VersionRange;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.maven.plugin.testing.AbstractMojoTestCase;
+import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
-
-import static org.junit.Assert.assertTrue;
-
 
 /**
  * @author mtodorov
  */
-public class ArtifactsScannerTest
+public class WebXMLMergerMojoTest
+        extends AbstractMojoTestCase
 {
+
 
     public static final String DIR_TEST_RESOURCES = "target/test-classes/test-001-artifacts";
 
 
-    @Before
+    WebXMLMergerMojo mojo;
+
+
+    @Override
     public void setUp()
             throws Exception
     {
-        setupProject();
+        super.setUp();
+
+        mojo = (WebXMLMergerMojo) lookupMojo("merge", new File(DIR_TEST_RESOURCES, "poms/pom.xml"));
+        mojo.setProject(initializeProject());
+        mojo.setLocalRepository(initializeLocalRepository());
+        mojo.setOutputFile(new File(DIR_TEST_RESOURCES, "web.xml").getCanonicalPath());
     }
 
-    private void setupProject()
-            throws IOException
+    private MavenProject initializeProject()
+            throws IOException, XmlPullParserException
     {
+        MavenProject project = new MavenProject();
+        project.setArtifacts(createArtifacts());
+
+        return project;
     }
 
-    @Test
-    public void testSearch()
-            throws IOException
+    private ArtifactRepository initializeLocalRepository()
     {
-        DependenciesScanner scanner = new DependenciesScanner();
+        File localRepoDir = new File(DIR_TEST_RESOURCES + "/local-repo");
+        String localRepoURL = localRepoDir.toURI().toString();
 
-        Set<Artifact> artifacts = createArtifacts();
+        return new DefaultArtifactRepository("local", localRepoURL, new DefaultRepositoryLayout());
+    }
 
-        ArtifactRepository localRepository = new DefaultArtifactRepository("local",
-                                                                           "file://" + new File(DIR_TEST_RESOURCES).getCanonicalPath() + "/local-repo",
-                                                                           new DefaultRepositoryLayout());
-
-        Map<String, InputStream> foundFiles = scanner.findResourcesInArtifacts(artifacts, localRepository);
-
-        assertTrue("Failed to locate any matches!", !foundFiles.isEmpty());
-
-        for (String key : foundFiles.keySet())
-        {
-            System.out.println("Path: " + key);
-        }
+    public void testExecute()
+            throws Exception
+    {
+        mojo.execute();
     }
 
     private Set<Artifact> createArtifacts()

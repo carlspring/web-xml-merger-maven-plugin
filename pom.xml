@@ -162,8 +162,10 @@
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
         </repository>
         <snapshotRepository>
-            <id>sonatype-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <!--id>sonatype-snapshots</id-->
+            <id>deployment-test-snapshots</id>
+            <!--url>https://oss.sonatype.org/content/repositories/snapshots</url-->
+            <url>http://dev.carlspring.org/nexus/content/repositories/deployment-test/</url>
         </snapshotRepository>
     </distributionManagement>
 

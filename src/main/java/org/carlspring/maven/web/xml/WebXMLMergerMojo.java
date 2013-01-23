@@ -89,14 +89,35 @@ public class WebXMLMergerMojo
             @SuppressWarnings("unchecked")
             Set<Artifact> artifacts = (Set<Artifact>) project.getArtifacts();
 
-            Map<String, InputStream> foundFiles = scanner.findResourcesInArtifacts(artifacts, getLocalRepository());
 
+            /**
+             * TODO
+             * TODO: The code below is incorrect. It needs to return an array of streams within the JAR-s pointing
+             * TODO: to the actual web.xml files, whereas, at the moment it's simply pointing to the war files themselves.
+             * TODO
+             */
+
+            Map<String, InputStream> foundFiles = scanner.findResourcesInArtifacts(artifacts, getLocalRepository());
+            InputStream[] streams = new InputStream[foundFiles.size()];
+            int i = 0;
             for (String key : foundFiles.keySet())
             {
                 System.out.println("Path: " + key);
+
+                streams[i] = foundFiles.get(key);
+
+                i++;
             }
+
+            XMLMerger merger = new XMLMerger();
+            merger.setOutputFileName(new File(outputFile).getCanonicalPath());
+            merger.execute(streams);
         }
         catch (IOException e)
+        {
+            throw new MojoExecutionException(e.getMessage(), e);
+        }
+        catch (Exception e)
         {
             throw new MojoExecutionException(e.getMessage(), e);
         }

@@ -101,7 +101,7 @@ public class XMLMerger
         XPathFactory xPathFactory = XPathFactory.newInstance();
         XPath xpath = xPathFactory.newXPath();
 
-        XPathExpression compiledExpression = xpath.compile("/web-app");
+        XPathExpression compiledExpression = xpath.compile(XPATH_WEB_APP);
 
         List<String> excludedTags = new ArrayList<String>();
         excludedTags.add("display-name");
@@ -125,9 +125,7 @@ public class XMLMerger
         DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
         docBuilderFactory.setIgnoringElementContentWhitespace(true);
         DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
-
-        final File outputFile = new File(outputFileName).getCanonicalFile();
-        Document outputDocument = docBuilder.parse(new FileInputStream(outputFile));
+        Document outputDocument = docBuilder.parse(new FileInputStream(getOutputFileName()));
 
         Node results = (Node) expression.evaluate(outputDocument, XPathConstants.NODE);
         if (results == null)
@@ -135,7 +133,7 @@ public class XMLMerger
             throw new IOException(outputFileName + ": the expression does not evaluate to a node!");
         }
 
-        for (int i = 1; i < streams.length; i++)
+        for (int i = 0; i < streams.length; i++)
         {
             Document merge = docBuilder.parse(streams[i]);
             Node nextResults = (Node) expression.evaluate(merge, XPathConstants.NODE);
