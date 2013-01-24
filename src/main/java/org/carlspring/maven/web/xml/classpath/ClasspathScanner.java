@@ -98,7 +98,7 @@ public class ClasspathScanner
 
                 if (singleEntry.getName().matches(fileNamePattern))
                 {
-                    System.out.println("Match found in archive " + resourceFile.getCanonicalPath() + ": " +
+                    System.out.println("Match found in archive " + resourceFile.getCanonicalPath() + ":/" +
                                        singleEntry.getName());
 
                     result.put(jarFile.getName() + "/" + singleEntry.getName(), jarFile.getInputStream(singleEntry));

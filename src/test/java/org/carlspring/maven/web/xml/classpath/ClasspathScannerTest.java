@@ -86,11 +86,6 @@ public class ClasspathScannerTest
         Map<String, InputStream> foundFiles = scanner.findWebXMLResourcesInClasspath();
 
         assertTrue("Failed to locate any matches!", !foundFiles.isEmpty());
-
-        for (String key : foundFiles.keySet())
-        {
-            System.out.println("Path: " + key);
-        }
     }
 
 }

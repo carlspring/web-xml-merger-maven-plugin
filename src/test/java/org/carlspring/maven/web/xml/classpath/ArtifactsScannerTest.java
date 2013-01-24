@@ -73,11 +73,6 @@ public class ArtifactsScannerTest
         Set<String> foundFiles = scanner.findResourcesInArtifacts(artifacts, localRepository);
 
         assertTrue("Failed to locate any matches!", !foundFiles.isEmpty());
-
-        for (String key : foundFiles)
-        {
-            System.out.println("Path: " + key);
-        }
     }
 
     private Set<Artifact> createArtifacts()
