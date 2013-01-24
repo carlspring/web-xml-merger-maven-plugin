@@ -56,7 +56,7 @@ public class DependenciesScanner
 
                 if (singleEntry.getName().matches(".*web\\.xml"))
                 {
-                    System.out.println("Match found in archive " + dependencyFile.getCanonicalPath() + ": " +
+                    System.out.println("Match found in archive " + dependencyFile.getCanonicalPath() + ":/" +
                                        singleEntry.getName());
 
                     results.add(jarFile.getName());
