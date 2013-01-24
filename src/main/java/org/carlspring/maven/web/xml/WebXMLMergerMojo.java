@@ -21,7 +21,6 @@ package org.carlspring.maven.web.xml;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -30,9 +29,6 @@ import org.carlspring.maven.web.xml.classpath.DependenciesScanner;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -90,28 +86,11 @@ public class WebXMLMergerMojo
             Set<Artifact> artifacts = (Set<Artifact>) project.getArtifacts();
 
 
-            /**
-             * TODO
-             * TODO: The code below is incorrect. It needs to return an array of streams within the JAR-s pointing
-             * TODO: to the actual web.xml files, whereas, at the moment it's simply pointing to the war files themselves.
-             * TODO
-             */
-
-            Map<String, InputStream> foundFiles = scanner.findResourcesInArtifacts(artifacts, getLocalRepository());
-            InputStream[] streams = new InputStream[foundFiles.size()];
-            int i = 0;
-            for (String key : foundFiles.keySet())
-            {
-                System.out.println("Path: " + key);
-
-                streams[i] = foundFiles.get(key);
-
-                i++;
-            }
+            Set<String> foundFiles = scanner.findResourcesInArtifacts(artifacts, getLocalRepository());
 
             XMLMerger merger = new XMLMerger();
             merger.setOutputFileName(new File(outputFile).getCanonicalPath());
-            merger.execute(streams);
+            merger.execute(foundFiles);
         }
         catch (IOException e)
         {

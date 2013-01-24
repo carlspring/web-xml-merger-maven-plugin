@@ -31,9 +31,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
@@ -72,11 +70,11 @@ public class ArtifactsScannerTest
                                                                            "file://" + new File(DIR_TEST_RESOURCES).getCanonicalPath() + "/local-repo",
                                                                            new DefaultRepositoryLayout());
 
-        Map<String, InputStream> foundFiles = scanner.findResourcesInArtifacts(artifacts, localRepository);
+        Set<String> foundFiles = scanner.findResourcesInArtifacts(artifacts, localRepository);
 
         assertTrue("Failed to locate any matches!", !foundFiles.isEmpty());
 
-        for (String key : foundFiles.keySet())
+        for (String key : foundFiles)
         {
             System.out.println("Path: " + key);
         }

@@ -24,8 +24,9 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -36,17 +37,15 @@ public class DependenciesScanner
 {
 
 
-    public Map<String, InputStream> findResourcesInArtifacts(Set<Artifact> artifacts,
-                                                             ArtifactRepository localRepository)
+    public Set<String> findResourcesInArtifacts(Set<Artifact> artifacts,
+                                                ArtifactRepository localRepository)
             throws IOException
     {
-        Map<String, InputStream> results = new TreeMap<String, InputStream>();
-
+        Set<String> results = new LinkedHashSet<String>();
         Set<Artifact> wars = getWARArtifacts(artifacts);
 
         for (Artifact war : wars)
         {
-            //! File dependencyFile = ArtifactUtils.getFileForDependency(war, new File(localRepository.getBasedir()));
             File dependencyFile = new File(localRepository.getBasedir(), localRepository.pathOf(war));
 
             JarFile jarFile = new JarFile(dependencyFile);
@@ -60,10 +59,9 @@ public class DependenciesScanner
                     System.out.println("Match found in archive " + dependencyFile.getCanonicalPath() + ": " +
                                        singleEntry.getName());
 
-                    results.put(jarFile.getName() + "/" + singleEntry.getName(), jarFile.getInputStream(singleEntry));
+                    results.add(jarFile.getName());
                 }
             }
-
         }
 
         return results;

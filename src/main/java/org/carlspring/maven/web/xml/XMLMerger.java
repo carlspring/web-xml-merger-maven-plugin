@@ -21,7 +21,6 @@ package org.carlspring.maven.web.xml;
 
 import com.sun.org.apache.xml.internal.serialize.OutputFormat;
 import com.sun.org.apache.xml.internal.serialize.XMLSerializer;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -32,7 +31,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
 /**
  * @author mtodorov
@@ -64,9 +67,13 @@ public class XMLMerger
         List<String> excludedTags = new ArrayList<String>();
         excludedTags.add("display-name");
 
-        InputStream[] streams = loadStreams(files);
+        Set<String> fileSet = new LinkedHashSet<String>();
+        for (File file : files)
+        {
+            fileSet.add(file.getCanonicalPath());
+        }
 
-        final Document mergedDoc = merge(compiledExpression, excludedTags, streams);
+        final Document mergedDoc = merge(compiledExpression, excludedTags, fileSet);
 
         if (verbose)
         {
@@ -74,28 +81,7 @@ public class XMLMerger
         }
     }
 
-    // This method is probably not a good idea
-    private InputStream[] loadStreams(File[] files)
-            throws FileNotFoundException, MojoExecutionException
-    {
-        InputStream[] streams = new FileInputStream[files.length];
-        int i = 0;
-        for (File file : files)
-        {
-            streams[i] = new FileInputStream(file);
-            if (maxLoadedStreams == 0 || ((i + 1) < maxLoadedStreams))
-            {
-                i++;
-            }
-            else
-            {
-                throw new MojoExecutionException("Exceeded the number of permitted simultaneously open streams!");
-            }
-        }
-        return streams;
-    }
-
-    public void execute(InputStream[] streams)
+    public void execute(Set<String> warPaths)
             throws Exception
     {
         XPathFactory xPathFactory = XPathFactory.newInstance();
@@ -106,7 +92,7 @@ public class XMLMerger
         List<String> excludedTags = new ArrayList<String>();
         excludedTags.add("display-name");
 
-        final Document mergedDoc = merge(compiledExpression, excludedTags, streams);
+        final Document mergedDoc = merge(compiledExpression, excludedTags, warPaths);
 
         if (verbose)
         {
@@ -116,7 +102,7 @@ public class XMLMerger
 
     public Document merge(XPathExpression expression,
                           List<String> excludedTags,
-                          InputStream[] streams)
+                          Set<String> files)
             throws ParserConfigurationException,
                    IOException,
                    SAXException,
@@ -133,27 +119,56 @@ public class XMLMerger
             throw new IOException(outputFileName + ": the expression does not evaluate to a node!");
         }
 
-        for (int i = 0; i < streams.length; i++)
+
+        if (!files.isEmpty())
         {
-            Document merge = docBuilder.parse(streams[i]);
-            Node nextResults = (Node) expression.evaluate(merge, XPathConstants.NODE);
+            System.out.println("Merging web.xml files...");
+        }
 
-            while (nextResults.hasChildNodes())
+        for (String file : files)
+        {
+            InputStream is = null;
+
+            try
             {
-                Node child = nextResults.getFirstChild();
-                nextResults.removeChild(child);
+                is = getInputStream(file);
 
-                boolean include = true;
-                if (child.getNodeName() != null && excludedTags.contains(child.getNodeName()))
+                if (is instanceof FileInputStream)
                 {
-                    include = false;
+                    System.out.println(" -> Applying " + file);
+                }
+                else
+                {
+                    System.out.println(" -> Applying " + file + "/WEB-INF/web.xml");
                 }
 
-                if (include)
-                {
-                    child = outputDocument.importNode(child, true);
+                Document merge = docBuilder.parse(is);
+                Node nextResults = (Node) expression.evaluate(merge, XPathConstants.NODE);
 
-                    results.appendChild(child);
+                while (nextResults.hasChildNodes())
+                {
+                    Node child = nextResults.getFirstChild();
+                    nextResults.removeChild(child);
+
+                    boolean include = true;
+                    if (child.getNodeName() != null && excludedTags.contains(child.getNodeName()))
+                    {
+                        include = false;
+                    }
+
+                    if (include)
+                    {
+                        child = outputDocument.importNode(child, true);
+
+                        results.appendChild(child);
+                    }
+                }
+            }
+            finally
+            {
+                if (is != null)
+                {
+                    is.close();
                 }
             }
         }
@@ -161,15 +176,39 @@ public class XMLMerger
         return outputDocument;
     }
 
+    private InputStream getInputStream(String file)
+            throws IOException
+    {
+        InputStream is;
+
+        if (file.toLowerCase().endsWith(".war"))
+        {
+            JarFile jarFile = new JarFile(file);
+            ZipEntry entry = jarFile.getEntry("WEB-INF/web.xml");
+
+            is = jarFile.getInputStream(entry);
+        }
+        else
+        {
+            is = new FileInputStream(file);
+        }
+
+        return is;
+    }
+
     private void store(Document document)
             throws Exception
     {
+        File outputFile = new File(outputFileName).getCanonicalFile();
+
+        System.out.println("Storing '" +outputFile.getPath() + "'...");
+
         OutputFormat format = new OutputFormat(document);
         format.setLineWidth(65);
         format.setIndenting(true);
         format.setIndent(4);
 
-        Writer writer = new OutputStreamWriter(new FileOutputStream(outputFileName));
+        Writer writer = new OutputStreamWriter(new FileOutputStream(outputFile));
         XMLSerializer serializer = new XMLSerializer(writer, format);
         serializer.serialize(document);
 
