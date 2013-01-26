@@ -128,18 +128,22 @@ public class XMLMerger
         for (String file : files)
         {
             InputStream is = null;
+            JarFile jarFile = null;
 
             try
             {
-                is = getInputStream(file);
-
-                if (is instanceof FileInputStream)
+                if (file.toLowerCase().endsWith(".war"))
                 {
-                    System.out.println(" -> Applying " + file);
+                    jarFile = new JarFile(file);
+                    ZipEntry entry = jarFile.getEntry("WEB-INF/web.xml");
+
+                    is = jarFile.getInputStream(entry);
+                    System.out.println(" -> Applying " + file + "/WEB-INF/web.xml");
                 }
                 else
                 {
-                    System.out.println(" -> Applying " + file + "/WEB-INF/web.xml");
+                    is = new FileInputStream(file);
+                    System.out.println(" -> Applying " + file);
                 }
 
                 Document merge = docBuilder.parse(is);
@@ -166,6 +170,11 @@ public class XMLMerger
             }
             finally
             {
+                if (jarFile != null)
+                {
+                    jarFile.close();
+                }
+
                 if (is != null)
                 {
                     is.close();
@@ -174,26 +183,6 @@ public class XMLMerger
         }
 
         return outputDocument;
-    }
-
-    private InputStream getInputStream(String file)
-            throws IOException
-    {
-        InputStream is;
-
-        if (file.toLowerCase().endsWith(".war"))
-        {
-            JarFile jarFile = new JarFile(file);
-            ZipEntry entry = jarFile.getEntry("WEB-INF/web.xml");
-
-            is = jarFile.getInputStream(entry);
-        }
-        else
-        {
-            is = new FileInputStream(file);
-        }
-
-        return is;
     }
 
     private void store(Document document)

@@ -60,8 +60,12 @@ public class DependenciesScanner
                                        singleEntry.getName());
 
                     results.add(jarFile.getName());
+
+                    break;
                 }
             }
+
+            jarFile.close();
         }
 
         return results;
