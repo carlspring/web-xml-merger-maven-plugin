@@ -1,0 +1,5 @@
+
+- Add proper logging.
+- Make the mojo support general exclusions rules.
+- Make the mojo support exclusions rules per artifact.
+- Write some proper docs.
