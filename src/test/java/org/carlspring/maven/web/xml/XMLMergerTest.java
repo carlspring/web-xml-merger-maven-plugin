@@ -62,12 +62,11 @@ public class XMLMergerTest
 
         File resourcesBaseDir = new File("target/test-classes").getCanonicalFile();
 
+        CLASSPATH += ":" + new File("target/classes").getCanonicalPath();
         CLASSPATH += ":" + new File(resourcesBaseDir, "dirs/dir1");
         CLASSPATH += ":" + new File(resourcesBaseDir, "dirs/dir2");
         CLASSPATH += ":" + new File(resourcesBaseDir, "jars/webapp1.war");
         CLASSPATH += ":" + new File(resourcesBaseDir, "jars/webapp2.war");
-
-        System.setProperty("java.class.path", CLASSPATH);
     }
 
     @After

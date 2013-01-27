@@ -23,6 +23,8 @@ import com.sun.org.apache.xml.internal.serialize.OutputFormat;
 import com.sun.org.apache.xml.internal.serialize.XMLSerializer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -30,10 +32,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
@@ -55,6 +54,16 @@ public class XMLMerger
 
     private boolean verbose = true;
 
+    private static Map<String, String> SCHEMA_PATHS = new LinkedHashMap<String, String>();
+
+
+    static
+    {
+        SCHEMA_PATHS.put("http://java.sun.com/dtd/web-app_2_2.dtd", "dtd/web-app_2_2.dtd");
+        SCHEMA_PATHS.put("http://java.sun.com/dtd/web-app_2_3.dtd", "dtd/web-app_2_3.dtd");
+        SCHEMA_PATHS.put("http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd", "xsd/web-app_2_4.xsd");
+        SCHEMA_PATHS.put("http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd", "xsd/web-app_2_5.xsd");
+    }
 
     public void execute(File[] files)
             throws Exception
@@ -111,6 +120,35 @@ public class XMLMerger
         DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
         docBuilderFactory.setIgnoringElementContentWhitespace(true);
         DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+
+        docBuilder.setEntityResolver(new EntityResolver()
+        {
+            public InputSource resolveEntity(String publicId,
+                                             String systemId)
+                    throws SAXException, IOException
+            {
+                // System.out.println("Ignoring " + publicId + ", " + systemId);
+
+                final InputStream schemaInputStream = getInputStreamForSchema(systemId);
+
+                if (schemaInputStream != null)
+                {
+                    return new InputSource(schemaInputStream);
+                }
+                else
+                {
+                    System.out.println("WARNING: Could not resolve '" + systemId +  "' from classpath.");
+
+                    return new InputSource("");
+                }
+            }
+
+            private InputStream getInputStreamForSchema(String systemId)
+            {
+                return getClass().getClassLoader().getResourceAsStream(SCHEMA_PATHS.get(systemId));
+            }
+        });
+
         Document outputDocument = docBuilder.parse(new FileInputStream(getOutputFileName()));
 
         Node results = (Node) expression.evaluate(outputDocument, XPathConstants.NODE);
@@ -118,7 +156,6 @@ public class XMLMerger
         {
             throw new IOException(outputFileName + ": the expression does not evaluate to a node!");
         }
-
 
         if (!files.isEmpty())
         {
@@ -146,27 +183,7 @@ public class XMLMerger
                     System.out.println(" -> Applying " + file);
                 }
 
-                Document merge = docBuilder.parse(is);
-                Node nextResults = (Node) expression.evaluate(merge, XPathConstants.NODE);
-
-                while (nextResults.hasChildNodes())
-                {
-                    Node child = nextResults.getFirstChild();
-                    nextResults.removeChild(child);
-
-                    boolean include = true;
-                    if (child.getNodeName() != null && excludedTags.contains(child.getNodeName()))
-                    {
-                        include = false;
-                    }
-
-                    if (include)
-                    {
-                        child = outputDocument.importNode(child, true);
-
-                        results.appendChild(child);
-                    }
-                }
+                performMerge(expression, excludedTags, docBuilder, outputDocument, results, is);
             }
             finally
             {
@@ -185,12 +202,43 @@ public class XMLMerger
         return outputDocument;
     }
 
+    private void performMerge(XPathExpression expression,
+                              List<String> excludedTags,
+                              DocumentBuilder docBuilder,
+                              Document outputDocument,
+                              Node results,
+                              InputStream is)
+            throws SAXException, IOException, XPathExpressionException
+    {
+        Document merge = docBuilder.parse(is);
+        Node nextResults = (Node) expression.evaluate(merge, XPathConstants.NODE);
+
+        while (nextResults.hasChildNodes())
+        {
+            Node child = nextResults.getFirstChild();
+            nextResults.removeChild(child);
+
+            boolean include = true;
+            if (child.getNodeName() != null && excludedTags.contains(child.getNodeName()))
+            {
+                include = false;
+            }
+
+            if (include)
+            {
+                child = outputDocument.importNode(child, true);
+
+                results.appendChild(child);
+            }
+        }
+    }
+
     private void store(Document document)
             throws Exception
     {
         File outputFile = new File(outputFileName).getCanonicalFile();
 
-        System.out.println("Storing '" +outputFile.getPath() + "'...");
+        System.out.println("Storing '" + outputFile.getPath() + "'...");
 
         OutputFormat format = new OutputFormat(document);
         format.setLineWidth(65);
