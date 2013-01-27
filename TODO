@@ -3,3 +3,4 @@
 - Make the mojo support general exclusions rules.
 - Make the mojo support exclusions rules per artifact.
 - Write some proper docs.
+- When merging xml-s, show warnings, if there are differences between the DTD/XSD versions of the web.xml-s.
